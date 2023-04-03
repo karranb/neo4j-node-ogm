@@ -32,6 +32,7 @@ class Cypher {
     this.orders = []
     this.return = {}
     this.returnStrings = []
+    this.parameters = []
     this.distinct = ''
     this.skip = ''
     this.limit = ''
@@ -75,13 +76,13 @@ class Cypher {
   addSet(attr, value) {
     switch(true){
       case value instanceof Date:
-        this.sets.push(`${attr} = '${value.toISOString()}'`)
+        this.sets.push(`${attr} = ${this.addParameter(value.toISOString())}`)
         break
       case typeof value === "undefined":
         //IGNORE
         break
       default:
-        this.sets.push(`${attr} = '${typeof value === "string" ? value.replace(/'/g, "\\'") : value}'`)
+        this.sets.push(`${attr} = ${this.addParameter(value)}`)
     }
   }
 
@@ -91,20 +92,20 @@ class Cypher {
     }
   }
 
+  addParameter(value) {
+    const parameterName = `$param${this.parameters.length + 1}`
+    this.parameters.push(value)
+    return parameterName
+  }
+
   addWhere({ attr, operator, value, not = false }) {
     let whereString
     if (!OPERATORS.includes(operator)) operator = '='
 
-    switch (operator) {
-      case 'IN':
-        if (!Array.isArray(value)) throw new Error('on IN operator, value must be an Array')
-        value = value.map((v) => (Number.isInteger(v) ? v : `'${v}'`))
-        whereString = `${not ? 'NOT' : ''} ${attr} ${operator} [${value.join(',')}]`
-        break
-      default:
-        whereString = `${not ? 'NOT' : ''} ${attr} ${operator} ${Number.isInteger(value) ? value : `'${value}'`}`
+    if (operator === 'IN' && !Array.isArray(value)) {
+      throw new Error('on IN operator, value must be an Array')
     }
-
+    whereString = `${not ? 'NOT' : ''} ${attr} ${operator} ${this.addParameter(value)}`
     this.wheres.push(whereString)
   }
 
@@ -217,9 +218,12 @@ class Cypher {
       const session = database.session({
         defaultAccessMode: mode === 'read' ? getInstance().session.READ : getInstance().session.WRITE,
       })
-      // console.log('stmt', stmt)
+      const params = this.parameters.reduce((acc, value, index) => ({
+        ...acc,
+        [`param${index+1}`]: value,
+      }), {})
       session
-        .run(stmt)
+        .run(stmt, params)
         .then((result) => resolve(result.records))
         .catch((e) => reject(`Cypher ERROR: ${e.message}`))
         .then(() => {
