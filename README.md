@@ -206,6 +206,25 @@ const users = await User.findAll() //return Collection
 await users.deleteAll()
 ```
 
+#### Filtering using `or` and `and` expressions
+
+You can use `or` and `and` expressions for filtering by nesting respectively `$or` and `$and` properties with the filters you'd want to add
+
+```js
+User.findAll({
+  filter_attributes: [{
+    $or: [
+      { $and: [
+        { key: 'active', value: true},
+        { key: 'email', value: 'email@domain.com'},
+      ]},
+      { key: 'id', value: -1},
+    ]}
+  ]
+})
+// Return collection of User that match this expression: (active=true and email='email@domain.com') or (id = -1)
+```
+
 ## API
 
 **Collection functions:**
