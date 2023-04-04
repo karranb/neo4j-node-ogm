@@ -43,6 +43,7 @@ describe('Use Cases - 02', () => {
         .then(() => done(), done)
     })
 
+<<<<<<< HEAD
     it('get filtering with nested filters', done => {
       User.findAll({
         filter_attributes: [{
@@ -62,6 +63,45 @@ describe('Use Cases - 02', () => {
 
     it('get all users toString', () => {
       expect(User.findAll().toString()).to.be.eql(`MATCH (user:User)  \n                  RETURN  user {id:id(user), .name, .language, .email, .active, .password, .created_at }\n                    `)
+=======
+    it('get all users filter with special char', done => {
+      User.findAll({
+        filter_attributes: [
+          { key: 'name', value: "'User special char test"}
+        ]
+      })
+        .then(users => {
+          expect(users.length()).to.equal(1)
+          expect(users.first().email).to.be.equal('emailupdated@domain.com')
+        })
+        .then(() => done(), done)
+    })
+
+    it('get all users filter using IN operator', done => {
+      User.findAll({
+        filter_attributes: [
+          { key: 'email', operator: 'IN', value: ['emailupdated@domain.com'] }
+        ]
+      })
+        .then(users => {
+          expect(users.length()).to.equal(1)
+          expect(users.first().email).to.be.equal('emailupdated@domain.com')
+        })
+        .then(() => done(), done)
+    })
+
+    it('get all users filter using boolean = false', done => {
+      User.findAll({
+        filter_attributes: [
+          { key: 'active', value: false }
+        ]
+      })
+        .then(users => {
+          expect(users.length()).to.equal(1)
+          expect(users.first().email).to.be.equal('emailupdated@domain.com')
+        })
+        .then(() => done(), done)
+>>>>>>> fix_use-params-to-avoid-cypher-injection
     })
 
     it('get all users inverse orderby', done => {
