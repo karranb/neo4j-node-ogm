@@ -2,7 +2,6 @@ import { Cypher } from './cypher'
 import { Collection } from './collection'
 import { createGetterAndSetter, convertID } from './utils'
 import { hydrate, checkWith } from './hydrate'
-import { Field } from './field'
 
 const ORDER_BY_FUNCTIONS_ALLOWED = [
   'toUpper',
@@ -416,6 +415,47 @@ class Model {
     return this.findAll(config)
   }
 
+  static async count(config = {}) {
+    let self
+    if (!config.parent) {
+      self = new this(undefined, config.state)
+      self._state = config.state
+    } else {
+      self = config.parent
+      self.parent = true
+    }
+
+    Object.keys(config).forEach((key) => {
+      config[key] === undefined && delete config[key]
+    })
+    config = Object.assign(
+      {
+        with_related: [],
+        filter_attributes: [],
+        onlyRelation: false,
+        order_by: [],
+        skip: '',
+        limit: '',
+        count: '*',
+        optional: true,
+        state: undefined,
+      },
+      config,
+    )
+
+    config.with_related.forEach((item) => {
+      const w = item.split('__')
+      self._with.push(w)
+    })
+    self.cypher = new Cypher()
+    self.cypher.count = config.count
+
+    self.filter_attributes = config.filter_attributes.map((fa) => self.prepareFilter(fa, self))
+    self.doMatchs(self, false, 0)
+    const data = await self.cypher.find()
+    return new Model({ count: convertID(data[0]._fields[0] )}, ['COUNT'])
+  }
+
   static async findAll(config = {}) {
     let self
     if (!config.parent) {
@@ -437,7 +477,6 @@ class Model {
         order_by: [],
         skip: '',
         limit: '',
-        count: '',
         optional: true,
         state: undefined,
       },
@@ -455,7 +494,6 @@ class Model {
     self.cypher.optional = config.optional
     self.cypher.skip = config.skip
     self.cypher.limit = config.limit
-    self.cypher.count = config.count
     self.filter_attributes = config.filter_attributes.map((fa) => self.prepareFilter(fa, self))
 
     self.order_by = config.order_by.map((ob) => {
@@ -482,11 +520,6 @@ class Model {
     const data = await self.cypher.find()
 
     const result = new Collection()
-    if (config.count) {
-      let model = new Model({ count: convertID(data[0]._fields[0] )}, ['COUNT'])
-      result[0] = model
-      return result
-    }
 
     const ids = []
     data.forEach((record) => {
