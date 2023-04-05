@@ -52,7 +52,7 @@ class Cypher {
         filterRelationship =
           '{' +
           Object.entries(targetModel.filter_relationship)
-            .map(([key, value]) => `${key}:'${value}'`)
+            .map(([key, value]) => `${key}:${this.addParameter(value)}`)
             .join(', ') +
           '}'
       }
@@ -95,6 +95,7 @@ class Cypher {
   parseWhereToString({ attr, operator, value, not = false, $and = [], $or = [] }) {
     if (!OPERATORS.includes(operator)) operator = '='
     if (operator === 'IN' && !Array.isArray(value)) throw new Error('on IN operator, value must be an Array')
+    if (value === undefined) return 'true'
     if ($and.length) return `(${$and.map(filter => this.parseWhereToString(filter)).join(' AND ')})`
     if ($or.length) return `(${$or.map(filter => this.parseWhereToString(filter)).join(' OR ')})`
     return `${not ? 'NOT' : ''} ${attr} ${operator} ${this.addParameter(value)}`
@@ -106,16 +107,8 @@ class Cypher {
     return parameterName
   }
 
-  addWhere({ attr, operator, value, not = false }) {
+  addWhere({ attr, operator, value, not = false, $and, $or }) {
     this.wheres.push(this.parseWhereToString({ attr, operator, value, $and, $or, not }))
-    let whereString
-    if (!OPERATORS.includes(operator)) operator = '='
-
-    if (operator === 'IN' && !Array.isArray(value)) {
-      throw new Error('on IN operator, value must be an Array')
-    }
-    whereString = `${not ? 'NOT' : ''} ${attr} ${operator} ${this.addParameter(value)}`
-    this.wheres.push(whereString)
   }
 
   writeWhere() {

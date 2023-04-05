@@ -26,9 +26,7 @@ describe('Use Cases - 02', () => {
     })
     it('update toString', () => {
       user.email = 'emailupdated@domain.com'
-      expect(user.save().toString()).to.contain(`MATCH (user:User)  WHERE  id(user) = ${user.id}`)
-      expect(user.save().toString()).to.contain(`SET user.name = \'User UseCase Test\' , user.language = \'pt_BR\' , user.email = \'emailupdated@domain.com\' , user.active = \'false\' , `)
-      expect(user.save().toString()).to.contain(`RETURN user {id:id(user), .name, .language, .email, .active, .password, .created_at }`)
+      expect(user.save().toString()).to.be.equal(`\n    MATCH (user:User)  WHERE  id(user) = $param1\n    SET user.name = $param2 , user.language = $param3 , user.email = $param4 , user.active = $param5 , user.password = $param6 , user.created_at = $param7\n    RETURN user {id:id(user), .name, .language, .email, .active, .password, .created_at }`)
     })
   })
 
@@ -43,13 +41,12 @@ describe('Use Cases - 02', () => {
         .then(() => done(), done)
     })
 
-<<<<<<< HEAD
     it('get filtering with nested filters', done => {
       User.findAll({
         filter_attributes: [{
           $or: [
             { $and: [
-              { key: 'active', value: 'true'},
+              { key: 'active', value: true},
               { key: 'email', value: 'email@domain.com'},
             ]},
             { key: 'id', value: -1},
@@ -60,10 +57,12 @@ describe('Use Cases - 02', () => {
           expect(users.first().email).to.be.equal('email@domain.com')
         })
         .then(() => done(), done)
+    })
+    
 
     it('get all users toString', () => {
       expect(User.findAll().toString()).to.be.eql(`MATCH (user:User)  \n                  RETURN  user {id:id(user), .name, .language, .email, .active, .password, .created_at }\n                    `)
-=======
+    })
     it('get all users filter with special char', done => {
       User.findAll({
         filter_attributes: [
@@ -98,10 +97,10 @@ describe('Use Cases - 02', () => {
       })
         .then(users => {
           expect(users.length()).to.equal(1)
+          expect(users.first().active).to.be.equal(false)
           expect(users.first().email).to.be.equal('emailupdated@domain.com')
         })
         .then(() => done(), done)
->>>>>>> fix_use-params-to-avoid-cypher-injection
     })
 
     it('get all users inverse orderby', done => {
@@ -141,7 +140,7 @@ describe('Use Cases - 02', () => {
 
   describe('::findById', () => {
     it('get user by id to string', () => {
-      expect(User.findByID(-1).toString()).to.be.eql('MATCH (user:User)  WHERE  id(user) = -1 \n                  RETURN  user {id:id(user), .name, .language, .email, .active, .password, .created_at }\n                    ')
+      expect(User.findByID(-1).toString()).to.be.eql(`MATCH (user:User)  WHERE  id(user) = $param1 \n                  RETURN  user {id:id(user), .name, .language, .email, .active, .password, .created_at }\n                    `)
     })
   })
 })

@@ -460,7 +460,7 @@ class Model {
     return new Model({ count: convertID(data[0]._fields[0] )}, ['COUNT'])
   }
 
-  static async findAll(config = {}) {
+  static findAll(config = {}) {
     let self
     if (!config.parent) {
       self = new this(undefined, config.state)
@@ -551,11 +551,11 @@ class Model {
   prepareFilter(fa, model) {
     if (!fa) return false
     if (fa.$and) {
-      fa.$and.forEach(filter => this.prepareFilter(filter, model))
+      fa = fa.$and.map(filter => this.prepareFilter(filter, model))
       return fa
     }
     if (fa.$or) {
-      fa.$or.forEach(filter => this.prepareFilter(filter, model))
+      fa = fa.$or.map(filter => this.prepareFilter(filter, model))
       return fa
     }
     const isCypherFunction = /.+\(.+\)/.test(fa.key)
