@@ -95,9 +95,9 @@ class Cypher {
   parseWhereToString({ attr, operator, value, not = false, $and = [], $or = [] }) {
     if (!OPERATORS.includes(operator)) operator = '='
     if (operator === 'IN' && !Array.isArray(value)) throw new Error('on IN operator, value must be an Array')
-    if (value === undefined) return 'true'
     if ($and.length) return `(${$and.map(filter => this.parseWhereToString(filter)).join(' AND ')})`
     if ($or.length) return `(${$or.map(filter => this.parseWhereToString(filter)).join(' OR ')})`
+    if (value === undefined) return 'true'
     return `${not ? 'NOT' : ''} ${attr} ${operator} ${this.addParameter(value)}`
   }
     
